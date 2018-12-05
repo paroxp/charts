@@ -55,11 +55,11 @@ $ kubectl scale statefulset my-release-worker --replicas=3
 
 ### Restarting workers
 
-If a worker isn't taking on work, you can restart the worker with `kubectl delete pod`. This will initiate a graceful shutdown by "retiring" the worker, to ensure Concourse doesn't try looking for old volumes on the new worker. The value`worker.terminationGracePeriodSeconds` can be used to provide an upper limit on graceful shutdown time before forcefully terminating the container. Check the output of `fly workers`, and if a worker is `stalled`, you'll also need to run `fly prune-worker` to allow the new incarnation of the worker to start.
+If a worker isn't taking on work, you can restart the worker with `kubectl delete pod`. 
 
-### Worker Liveness Probe
+This will initiate a graceful shutdown by "retiring" the worker, to ensure Concourse doesn't try looking for old volumes on the new worker. 
 
-The worker's Liveness Probe will trigger a restart of the worker if it detects unrecoverable errors, by looking at the worker's logs. The set of strings used to identify such errors could change in the future, but can be tuned with `worker.fatalErrors`. See [values.yaml](values.yaml) for the defaults.
+The value `worker.terminationGracePeriodSeconds` can be used to provide an upper limit on graceful shutdown time before forcefully terminating the container. Check the output of `fly workers`, and if a worker is `stalled`, you'll also need to run `fly prune-worker` to allow the new incarnation of the worker to start (when using the `concourse.worker.ephemeral` property, this step is not needed as `stalled` workers get reaped automatically).
 
 ## Configuration
 
@@ -103,7 +103,6 @@ The following table lists the configurable parameters of the Concourse chart and
 | `worker.additionalAffinities` | Additional affinities to apply to worker pods. E.g: node affinity | `{}` |
 | `worker.tolerations` | Tolerations for the worker nodes | `[]` |
 | `worker.terminationGracePeriodSeconds` | Upper bound for graceful shutdown to allow the worker to drain its tasks | `60` |
-| `worker.fatalErrors` | Newline delimited strings which, when logged, should trigger a restart of the worker | *See [values.yaml](values.yaml)* |
 | `worker.hardAntiAffinity` | Should the workers be forced (as opposed to preferred) to be on different nodes? | `false` |
 | `worker.emptyDirSize` | When persistance is disabled this value will be used to limit the emptyDir volume size | `nil` |
 | `postgresql.enabled` | Enable PostgreSQL as a chart dependency | `true` |
@@ -156,7 +155,11 @@ The following table lists the configurable parameters of the Concourse chart and
 | `secrets.influxdbPassword` | Password used to authenticate with influxdb | `nil` |
 | `secrets.syslogCaCert` | SSL certificate to verify Syslog server | `nil` |
 
-For configurable concourse parameters, refer to [values.yaml](values.yaml) `concourse` section. All parameters under this section are strictly mapped from concourse binary commands. For example if one needs to configure the concourse external URL, the param `concourse` -> `web` -> `externalUrl` should be set, which is equivalent to running concourse binary as `concourse web --external-url`. For those sub-sections have `enabled`, one will need to set `enabled` to be `true` to use the following params within the section.
+For configurable concourse parameters, refer to [values.yaml](values.yaml) `concourse` section. 
+
+All parameters under this section are strictly mapped from concourse binary commands. 
+
+For example if one needs to configure the concourse external URL, the param `concourse` -> `web` -> `externalUrl` should be set, which is equivalent to running concourse binary as `concourse web --external-url`. For those sub-sections have `enabled`, one will need to set `enabled` to be `true` to use the following params within the section.
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 

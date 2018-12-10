@@ -16,7 +16,7 @@ readonly BRANCHES=(
 	cirocosta/concourse/worker-rebalancing
 	cirocosta/concourse/ephemeral-workers
 	cirocosta/concourse-prometheus-scrape-pods
-	cirocosta/concourse/worker-probes
+	cirocosta/concourse/5.x
 )
 
 main() {

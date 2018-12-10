@@ -12,11 +12,11 @@ set -o pipefail
 readonly UPSTREAM=https://github.com/helm/charts
 readonly MERGED_BRANCH=${MERGED:-"merged"}
 readonly BRANCHES=(
-	origin/concourse/tls-secrets
-	origin/concourse/worker-rebalancing
-	origin/concourse/ephemeral-workers
-	origin/concourse-prometheus-scrape-pods
-	origin/concourse/worker-probes
+	cirocosta/concourse/tls-secrets
+	cirocosta/concourse/worker-rebalancing
+	cirocosta/concourse/ephemeral-workers
+	cirocosta/concourse-prometheus-scrape-pods
+	cirocosta/concourse/worker-probes
 )
 
 main() {
@@ -35,6 +35,7 @@ BRANCHES:       ${BRANCHES[@]}
 
 update_upstream_state() {
 	git remote add upstream $UPSTREAM || true
+	git remote add cirocosta https://github.com/cirocosta/charts || true
 	git fetch --all
 }
 

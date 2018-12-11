@@ -55,6 +55,7 @@ update_merged_branch() {
 	_update_chart_version
 
 	git push origin $MERGED_BRANCH -f
+        git checkout maintenance
 }
 
 _update_chart_version() {

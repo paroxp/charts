@@ -13,6 +13,7 @@ readonly UPSTREAM=https://github.com/helm/charts
 readonly MERGED_BRANCH=${MERGED:-"merged"}
 readonly BRANCHES=(
 	cirocosta/concourse/tls-secrets
+        cirocosta/concourse/atc-configurable-probes
 	cirocosta/concourse/worker-rebalancing
 	cirocosta/concourse/ephemeral-workers
 	cirocosta/concourse-prometheus-scrape-pods

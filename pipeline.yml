@@ -1,0 +1,90 @@
+resources:
+- name: charts-upstream
+  type: git
+  source:
+    uri: https://github.com/helm/charts
+
+- name: charts-fork
+  type: git
+  source:
+    uri: https://((github-token))@github.com/concourse/charts
+    branch: master
+
+- name: charts-fork-maintenance
+  type: git
+  source:
+    uri: https://((github-token))@github.com/concourse/charts
+    branch: maintenance
+
+- name: git-image
+  type: registry-image
+  source:
+    repository: cirocosta/git
+    username: ((docker-user))
+    password: ((docker-password))
+
+
+jobs:
+- name: git-image
+  plan:
+  - task: build-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: concourse/builder
+      params:
+        REPOSITORY: cirocosta/git
+        TAG: latest
+        CONTEXT: ./
+      outputs:
+      - name: image
+      run:
+        path: /bin/sh
+        args:
+        - -c
+        - |
+          echo "FROM alpine
+          RUN apk add --update git bash" > ./Dockerfile
+          build
+  - put: git-image
+    params:
+      image: image/image.tar
+    get_params:
+      format: oci
+
+- name: run-maintenance
+  plan:
+  - aggregate:
+    - get: git-image
+      passed: [ git-image ]
+      trigger: true
+    - get: charts-fork-maintenance
+      trigger: true
+  - task: run
+    image: git-image
+    config:
+      platform: linux
+      inputs:
+      - name: charts-fork-maintenance
+        path: ./
+      run:
+        path: /bin/sh
+        args:
+        - -c
+        - |
+          git config user.name "Ciro S. Costa"
+          git config user.email "cscosta@pivotal.io"
+          bash -x ./run.sh
+
+- name: bump-fork
+  plan:
+  - aggregate:
+    - get: charts-upstream
+      trigger: true
+    - get: charts-fork
+  - put: charts-fork
+    params:
+      repository: ./charts-upstream

@@ -41,7 +41,7 @@ update_upstream_state() {
 }
 
 update_merged_branch() {
-	git checkout $MERGED_BRANCH
+	git checkout -b $MERGED_BRANCH
 	git reset --hard upstream/master
 
 	for branch in ${BRANCHES[@]}; do

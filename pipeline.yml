@@ -23,6 +23,14 @@ resources:
     username: ((docker-user))
     password: ((docker-password))
 
+groups:
+- name: main
+  jobs:
+  - bump-fork
+  - run-maintenance
+- name: images
+  jobs:
+  - git-image
 
 jobs:
 - name: git-image
@@ -55,6 +63,16 @@ jobs:
     get_params:
       format: oci
 
+- name: bump-fork
+  plan:
+  - aggregate:
+    - get: charts-upstream
+      trigger: true
+    - get: charts-fork
+  - put: charts-fork
+    params:
+      repository: ./charts-upstream
+
 - name: run-maintenance
   plan:
   - aggregate:
@@ -62,6 +80,8 @@ jobs:
       passed: [ git-image ]
       trigger: true
     - get: charts-fork-maintenance
+      trigger: true
+    - get: charts-fork
       trigger: true
   - task: run
     image: git-image
@@ -79,12 +99,3 @@ jobs:
           git config user.email "cscosta@pivotal.io"
           bash -x ./run.sh
 
-- name: bump-fork
-  plan:
-  - aggregate:
-    - get: charts-upstream
-      trigger: true
-    - get: charts-fork
-  - put: charts-fork
-    params:
-      repository: ./charts-upstream

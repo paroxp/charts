@@ -31,7 +31,7 @@ resources:
 - name: maintenance-image
   type: registry-image
   source:
-    repository: cirocosta/git
+    repository: cirocosta/charts-maintenance
     username: ((docker-user))
     password: ((docker-password))
 

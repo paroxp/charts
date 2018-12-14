@@ -62,7 +62,6 @@ jobs:
   - aggregate:
     - get: charts-upstream
       trigger: true
-    - get: charts-fork
   - put: charts-fork
     inputs: [ charts-upstream ]
     params:
@@ -75,6 +74,7 @@ jobs:
       passed: [ maintenance-image ]
       trigger: true
     - get: charts-fork
+      passed: [ bump-fork ]
       trigger: true
     - get: charts-fork-maintenance
       trigger: true
@@ -85,24 +85,30 @@ jobs:
     config:
       platform: linux
       inputs:
-      - name: charts-fork-maintenance
       - name: charts-fork
+      - name: charts-fork-gh-pages
+        path: repository
+      - name: charts-fork-maintenance
       outputs:
       - name: repository
       params:
-        CHARTS_DIR: ./charts-fork
+        CHARTS_DIR: ./charts-fork/stable
         DESTINATION_DIR: ./repository
       run:
         path: /bin/bash
         args:
         - -c
         - |
-          git config user.name "Ciro S. Costa"
-          git config user.email "cscosta@pivotal.io"
+          export GIT_DISCOVERY_ACROSS_FILESYSTEM=1
+
+          helm init --client-only
+          helm repo remove local
+          git config --global user.name "Ciro S. Costa"
+          git config --global user.email "cscosta@pivotal.io"
           ./charts-fork-maintenance/update-helm-repository.sh
           cd $DESTINATION_DIR && \
             git add --all && \
-            git ci -m "[maintenance] bump"
+            git commit -m "[maintenance] bump"
   - put: charts-fork-gh-pages
     inputs: [ repository ]
     params:
@@ -117,6 +123,7 @@ jobs:
     - get: charts-fork-maintenance
       trigger: true
     - get: charts-fork
+      passed: [ bump-fork ]
       trigger: true
   - task: run
     image: maintenance-image

@@ -22,36 +22,18 @@ resources:
     uri: https://((github-token))@github.com/concourse/charts
     branch: gh-pages
 
-- name: git-image
+- name: maintenance-image
   type: registry-image
   source:
     repository: cirocosta/git
     username: ((docker-user))
     password: ((docker-password))
 
-- name: helm-image
-  type: registry-image
-  source:
-    repository: cirocosta/helm
-    username: ((docker-user))
-    password: ((docker-password))
-
-
-groups:
-- name: main
-  jobs:
-  - bump-fork
-  - run-maintenance
-  - update-hosted-helm-repository
-- name: images
-  jobs:
-  - git-image
-  - helm-image
-
-
 jobs:
-- name: helm-image
+- name: maintenance-image
   plan:
+  - get: charts-fork-maintenance
+    trigger: true
   - task: build-image
     privileged: true
     config:
@@ -61,56 +43,15 @@ jobs:
         source:
           repository: concourse/builder
       params:
-        REPOSITORY: cirocosta/helm
-        TAG: latest
-        CONTEXT: ./
+        REPOSITORY: cirocosta/maintenance-image
+        CONTEXT: ./charts-fork-maintenance
+      inputs:
+      - name: charts-fork-maintenance
       outputs:
       - name: image
       run:
-        path: /bin/sh
-        args:
-        - -c
-        - |
-          echo 'FROM alpine
-          ENV HELM_VERSION=2.12.0
-          RUN apk add --update bash
-          RUN set -x && \
-            wget "https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz" && \
-            tar -zxf "helm-v${HELM_VERSION}-linux-amd64.tar.gz" && \
-            mv linux-amd64/helm /usr/local/bin/helm && \
-            chmod +x /usr/local/bin/helm' > ./Dockerfile
-          build
-  - put: helm-image
-    params:
-      image: image/image.tar
-    get_params:
-      format: oci
-
-- name: git-image
-  plan:
-  - task: build-image
-    privileged: true
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: concourse/builder
-      params:
-        REPOSITORY: cirocosta/git
-        TAG: latest
-        CONTEXT: ./
-      outputs:
-      - name: image
-      run:
-        path: /bin/sh
-        args:
-        - -c
-        - |
-          echo "FROM alpine
-          RUN apk add --update git bash" > ./Dockerfile
-          build
-  - put: git-image
+        path: build
+  - put: maintenance-image
     params:
       image: image/image.tar
     get_params:
@@ -130,8 +71,8 @@ jobs:
 - name: update-hosted-helm-repository
   plan:
   - aggregate:
-    - get: helm-image
-      passed: [ helm-image ]
+    - get: maintenance-image
+      passed: [ maintenance-image ]
       trigger: true
     - get: charts-fork
       trigger: true
@@ -140,7 +81,7 @@ jobs:
     - get: charts-fork-gh-pages
       trigger: true
   - task: produce
-    image: helm-image
+    image: maintenance-image
     config:
       platform: linux
       inputs:
@@ -170,15 +111,15 @@ jobs:
 - name: run-maintenance
   plan:
   - aggregate:
-    - get: git-image
-      passed: [ git-image ]
+    - get: maintenance-image
+      passed: [ maintenance-image ]
       trigger: true
     - get: charts-fork-maintenance
       trigger: true
     - get: charts-fork
       trigger: true
   - task: run
-    image: git-image
+    image: maintenance-image
     config:
       platform: linux
       inputs:

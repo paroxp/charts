@@ -35,6 +35,7 @@ resources:
     username: ((docker-user))
     password: ((docker-password))
 
+
 jobs:
 - name: maintenance-image
   plan:
@@ -63,6 +64,7 @@ jobs:
     get_params:
       format: oci
 
+
 - name: bump-fork
   plan:
   - aggregate:
@@ -72,6 +74,7 @@ jobs:
     inputs: [ charts-upstream ]
     params:
       repository: ./charts-upstream
+
 
 - name: update-hosted-helm-repository
   plan:
@@ -124,6 +127,7 @@ jobs:
     params:
       repository: ./repository
 
+
 - name: update-merged
   plan:
   - aggregate:
@@ -150,13 +154,12 @@ jobs:
         path: /bin/sh
         args:
         - -c
-        - -x
         - -e
         - |
           git config user.name "Ciro S. Costa"
           git config user.email "cscosta@pivotal.io"
 
-          bash -x ./update-merged-branch.sh
+          ./update-merged-branch.sh
 
           git add --all .
           git commit -m "[maintenance] bumps concourse version"

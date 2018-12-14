@@ -16,6 +16,12 @@ resources:
     uri: https://((github-token))@github.com/concourse/charts
     branch: maintenance
 
+- name: charts-fork-gh-pages
+  type: git
+  source:
+    uri: https://((github-token))@github.com/concourse/charts
+    branch: gh-pages
+
 - name: git-image
   type: registry-image
   source:
@@ -23,16 +29,63 @@ resources:
     username: ((docker-user))
     password: ((docker-password))
 
+- name: helm-image
+  type: registry-image
+  source:
+    repository: cirocosta/helm
+    username: ((docker-user))
+    password: ((docker-password))
+
+
 groups:
 - name: main
   jobs:
   - bump-fork
   - run-maintenance
+  - update-hosted-helm-repository
 - name: images
   jobs:
   - git-image
+  - helm-image
+
 
 jobs:
+- name: helm-image
+  plan:
+  - task: build-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: concourse/builder
+      params:
+        REPOSITORY: cirocosta/helm
+        TAG: latest
+        CONTEXT: ./
+      outputs:
+      - name: image
+      run:
+        path: /bin/sh
+        args:
+        - -c
+        - |
+          echo 'FROM alpine
+          ENV HELM_VERSION=2.12.0
+          RUN apk add --update bash
+          RUN set -x && \
+            wget "https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz" && \
+            tar -zxf "helm-v${HELM_VERSION}-linux-amd64.tar.gz" && \
+            mv linux-amd64/helm /usr/local/bin/helm && \
+            chmod +x /usr/local/bin/helm' > ./Dockerfile
+          build
+  - put: helm-image
+    params:
+      image: image/image.tar
+    get_params:
+      format: oci
+
 - name: git-image
   plan:
   - task: build-image
@@ -70,8 +123,49 @@ jobs:
       trigger: true
     - get: charts-fork
   - put: charts-fork
+    inputs: [ charts-upstream ]
     params:
       repository: ./charts-upstream
+
+- name: update-hosted-helm-repository
+  plan:
+  - aggregate:
+    - get: helm-image
+      passed: [ helm-image ]
+      trigger: true
+    - get: charts-fork
+      trigger: true
+    - get: charts-fork-maintenance
+      trigger: true
+    - get: charts-fork-gh-pages
+      trigger: true
+  - task: produce
+    image: helm-image
+    config:
+      platform: linux
+      inputs:
+      - name: charts-fork-maintenance
+      - name: charts-fork
+      outputs:
+      - name: repository
+      params:
+        CHARTS_DIR: ./charts-fork
+        DESTINATION_DIR: ./repository
+      run:
+        path: /bin/bash
+        args:
+        - -c
+        - |
+          git config user.name "Ciro S. Costa"
+          git config user.email "cscosta@pivotal.io"
+          ./charts-fork-maintenance/update-helm-repository.sh
+          cd $DESTINATION_DIR && \
+            git add --all && \
+            git ci -m "[maintenance] bump"
+  - put: charts-fork-gh-pages
+    inputs: [ repository ]
+    params:
+      repository: ./repository
 
 - name: run-maintenance
   plan:
@@ -97,5 +191,5 @@ jobs:
         - |
           git config user.name "Ciro S. Costa"
           git config user.email "cscosta@pivotal.io"
-          bash -x ./run.sh
+          ./update-merged-branch.sh
 

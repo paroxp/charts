@@ -79,8 +79,8 @@ jobs:
     - get: maintenance-image
       passed: [ maintenance-image ]
       trigger: true
-    - get: charts-fork
-      passed: [ bump-fork ]
+    - get: charts-fork-merged
+      passed: [ update-merged ]
       trigger: true
     - get: charts-fork-maintenance
       trigger: true
@@ -90,14 +90,14 @@ jobs:
     config:
       platform: linux
       inputs:
-      - name: charts-fork
+      - name: charts-fork-merged
       - name: charts-fork-gh-pages
         path: repository
       - name: charts-fork-maintenance
       outputs:
       - name: repository
       params:
-        CHART_DIR: ./charts-fork/stable/concourse
+        CHART_DIR: ./charts-fork-merged/stable/concourse
         DESTINATION_DIR: ./repository
       run:
         path: /bin/bash
@@ -124,13 +124,14 @@ jobs:
     params:
       repository: ./repository
 
-- name: run-maintenance
+- name: update-merged
   plan:
   - aggregate:
     - get: maintenance-image
       passed: [ maintenance-image ]
       trigger: true
     - get: charts-fork-maintenance
+      passed: [ maintenance-image ]
       trigger: true
     - get: charts-fork
       passed: [ bump-fork ]
@@ -149,18 +150,20 @@ jobs:
         path: /bin/sh
         args:
         - -c
+        - -x
         - -e
         - |
-          ./update-merged-branch.sh
-
           git config user.name "Ciro S. Costa"
           git config user.email "cscosta@pivotal.io"
+
+          bash -x ./update-merged-branch.sh
+
           git add --all .
           git commit -m "[maintenance] bumps concourse version"
 
   - put: charts-fork-merged
-    inputs: [ result ]
+    inputs: [ repository ]
     params:
-      repository: ./result
+      repository: ./repository
       force: true
 

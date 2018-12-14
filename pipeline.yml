@@ -85,8 +85,6 @@ jobs:
     - get: charts-fork-merged
       passed: [ update-merged ]
       trigger: true
-    - get: charts-fork-maintenance
-      trigger: true
     - get: charts-fork-gh-pages
   - task: produce
     image: maintenance-image
@@ -96,7 +94,6 @@ jobs:
       - name: charts-fork-merged
       - name: charts-fork-gh-pages
         path: repository
-      - name: charts-fork-maintenance
       outputs:
       - name: repository
       params:

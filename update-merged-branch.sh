@@ -61,9 +61,6 @@ _update_chart_version() {
 	cat $chart_file |
 		sed 's/^version.*/version: 1337.0.0/g' >$tmp_chart_file
 	mv $tmp_chart_file $chart_file
-
-	git add --all .
-	git commit -m "[maintenance] bumps concourse version"
 }
 
 main "$@"

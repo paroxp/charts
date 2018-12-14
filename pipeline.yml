@@ -10,6 +10,12 @@ resources:
     uri: https://((github-token))@github.com/concourse/charts
     branch: master
 
+- name: charts-fork-merged
+  type: git
+  source:
+    uri: https://((github-token))@github.com/concourse/charts
+    branch: merged
+
 - name: charts-fork-maintenance
   type: git
   source:
@@ -79,7 +85,6 @@ jobs:
     - get: charts-fork-maintenance
       trigger: true
     - get: charts-fork-gh-pages
-      trigger: true
   - task: produce
     image: maintenance-image
     config:
@@ -92,23 +97,28 @@ jobs:
       outputs:
       - name: repository
       params:
-        CHARTS_DIR: ./charts-fork/stable
+        CHART_DIR: ./charts-fork/stable/concourse
         DESTINATION_DIR: ./repository
       run:
         path: /bin/bash
         args:
         - -c
+        - -e
         - |
           export GIT_DISCOVERY_ACROSS_FILESYSTEM=1
 
           helm init --client-only
           helm repo remove local
+          helm repo update
+          helm package -u -d $DESTINATION_DIR $CHART_DIR
+          helm repo index $DESTINATION_DIR
+
+          cd $DESTINATION_DIR
           git config --global user.name "Ciro S. Costa"
           git config --global user.email "cscosta@pivotal.io"
-          ./charts-fork-maintenance/update-helm-repository.sh
-          cd $DESTINATION_DIR && \
-            git add --all && \
-            git commit -m "[maintenance] bump"
+          git add --all
+          git commit -m "[maintenance] bump"
+
   - put: charts-fork-gh-pages
     inputs: [ repository ]
     params:
@@ -131,13 +141,26 @@ jobs:
       platform: linux
       inputs:
       - name: charts-fork-maintenance
-        path: ./
+        path: .
+      outputs:
+      - name: repository
+        path: .
       run:
         path: /bin/sh
         args:
         - -c
+        - -e
         - |
+          ./update-merged-branch.sh
+
           git config user.name "Ciro S. Costa"
           git config user.email "cscosta@pivotal.io"
-          ./update-merged-branch.sh
+          git add --all .
+          git commit -m "[maintenance] bumps concourse version"
+
+  - put: charts-fork-merged
+    inputs: [ result ]
+    params:
+      repository: ./result
+      force: true
 

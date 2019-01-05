@@ -11,14 +11,7 @@ set -o pipefail
 
 readonly UPSTREAM=https://github.com/helm/charts
 readonly MERGED_BRANCH=${MERGED:-"merged"}
-readonly BRANCHES=(
-	cirocosta/concourse/tls-secrets
-        cirocosta/concourse/atc-configurable-probes
-	cirocosta/concourse/worker-rebalancing
-	cirocosta/concourse/ephemeral-workers
-	cirocosta/concourse-prometheus-scrape-pods
-	cirocosta/concourse/5.x
-)
+readonly BRANCHES=$(cat ./refs.json | jq -r '.[] | "\(.repository)/\(.name)"')
 
 main() {
 	show_info
@@ -30,7 +23,7 @@ show_info() {
 	echo "Updating merged branch with PR branches changes
 MERGED_BRANCH:  $MERGED_BRANCH
 UPSTREAM:       $UPSTREAM
-BRANCHES:       ${BRANCHES[@]}
+BRANCHES:       ${BRANCHES}
 "
 }
 
@@ -43,7 +36,7 @@ update_upstream_state() {
 update_merged_branch() {
 	git reset --hard upstream/master
 
-	for branch in ${BRANCHES[@]}; do
+	for branch in ${BRANCHES}; do
 		git merge \
 			--no-edit \
 			--strategy recursive \

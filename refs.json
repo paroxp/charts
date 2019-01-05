@@ -1,0 +1,26 @@
+[
+  {
+    "repository": "cirocosta",
+    "name": "concourse/tls-secrets"
+  },
+  {
+    "repository": "cirocosta",
+    "name": "concourse/atc-configurable-probes"
+  },
+  {
+    "repository": "cirocosta",
+    "name": "concourse/worker-rebalancing"
+  },
+  {
+    "repository": "cirocosta",
+    "name": "concourse/ephemeral-workers"
+  },
+  {
+    "repository": "cirocosta",
+    "name": "concourse-prometheus-scrape-pods"
+  },
+  {
+    "repository": "cirocosta",
+    "name": "concourse/5.x"
+  }
+]

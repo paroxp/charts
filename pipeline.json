@@ -185,7 +185,7 @@
                      "trigger": true
                   },
                   {
-                     "get": "charts-branch-concourse-5.x",
+                     "get": "charts-branch-concourse-5.x-release",
                      "trigger": true
                   }
                ]
@@ -272,9 +272,9 @@
          "type": "git"
       },
       {
-         "name": "charts-branch-concourse-5.x",
+         "name": "charts-branch-concourse-5.x-release",
          "source": {
-            "branch": "concourse/5.x",
+            "branch": "concourse/5.x-release",
             "uri": "https://github.com/cirocosta/charts"
          },
          "type": "git"

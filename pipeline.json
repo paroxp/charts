@@ -165,18 +165,6 @@
                      "trigger": true
                   },
                   {
-                     "get": "charts-branch-concourse-tls-secrets",
-                     "trigger": true
-                  },
-                  {
-                     "get": "charts-branch-concourse-atc-configurable-probes",
-                     "trigger": true
-                  },
-                  {
-                     "get": "charts-branch-concourse-worker-rebalancing",
-                     "trigger": true
-                  },
-                  {
                      "get": "charts-branch-concourse-ephemeral-workers",
                      "trigger": true
                   },
@@ -231,30 +219,6 @@
       }
    ],
    "resources": [
-      {
-         "name": "charts-branch-concourse-tls-secrets",
-         "source": {
-            "branch": "concourse/tls-secrets",
-            "uri": "https://github.com/cirocosta/charts"
-         },
-         "type": "git"
-      },
-      {
-         "name": "charts-branch-concourse-atc-configurable-probes",
-         "source": {
-            "branch": "concourse/atc-configurable-probes",
-            "uri": "https://github.com/cirocosta/charts"
-         },
-         "type": "git"
-      },
-      {
-         "name": "charts-branch-concourse-worker-rebalancing",
-         "source": {
-            "branch": "concourse/worker-rebalancing",
-            "uri": "https://github.com/cirocosta/charts"
-         },
-         "type": "git"
-      },
       {
          "name": "charts-branch-concourse-ephemeral-workers",
          "source": {

@@ -1,18 +1,6 @@
 [
   {
     "repository": "cirocosta",
-    "name": "concourse/tls-secrets"
-  },
-  {
-    "repository": "cirocosta",
-    "name": "concourse/atc-configurable-probes"
-  },
-  {
-    "repository": "cirocosta",
-    "name": "concourse/worker-rebalancing"
-  },
-  {
-    "repository": "cirocosta",
     "name": "concourse/ephemeral-workers"
   },
   {

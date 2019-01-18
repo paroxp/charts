@@ -8,12 +8,12 @@
 
 ## Concourse image.
 ##
-image: concourse/concourse
+image: concourse/concourse-rc
 
 ## Concourse image version.
 ## ref: https://hub.docker.com/r/concourse/concourse/tags/
-##
-imageTag: "4.2.2"
+## TODO - make it not `latest`
+imageTag: "latest"
 
 ## Specific image digest to use in place of a tag.
 ## ref: https://kubernetes.io/docs/concepts/configuration/overview/#container-images
@@ -81,6 +81,11 @@ concourse:
     # cliArtifactsDir:
     ## Log database queries.
     # logDbQueries:
+    ## The number of attempts secret will be retried to be fetched,
+    ## in case a retryable error happens.
+    # secretRetryAttempts
+    ## The interval between secret retry retieval attempts.
+    # secretRetryInterval
     ## Interval on which to run build tracking.
     # buildTrackerInterval: 10s
     ## Default build logs to retain, 0 means all
@@ -219,6 +224,8 @@ concourse:
       hostName:
       ## A keyValue attribute to attach to emitted metrics. Can be specified multiple times.
       attribute:
+      ## Enable capturing of error log metrics.
+      # captureErrorMetrics: 
     datadog:
       enabled: false
       ## Use IP of node the pod is scheduled on, overrides `agentHost`
@@ -273,6 +280,9 @@ concourse:
       interval: 30s
       ## Grace period before reaping oneOff task containers
       oneOffGracePeriod: 5m
+      ## Period after which to reap containers and volumes that were created but
+      ## went missing from the worker.
+      # missingGracePeriod: 5m
     syslog:
       enabled: false
       ## Client hostname with which the build logs will be sent to the syslog server.
@@ -292,6 +302,8 @@ concourse:
       ## Length of time for which tokens are valid. Afterwards, users will have to log back in.
       # duration: 24h
       mainTeam:
+        ## Configuration file for specifying team params
+        # config:
         ## List of whitelisted local concourse users. These are the users you've added at atc startup with the addLocalUser setting.
         localUser: "test"
         ## Setting this flag will whitelist all logged in users in the system. ALL OF THEM. If, for example, you've configured GitHub, any user with a GitHub account will have access to your team.
@@ -306,6 +318,12 @@ concourse:
           space:
           ## (Deprecated) List of whitelisted CloudFoundry space guids
           spaceGuid:
+        ## Authentication (Main Team) (Bitbucket Cloud)
+        bitbucketCloud:
+          ## List of whitelisted Bitbucket Cloud users
+          user:
+          ## List of whitelisted Bitbucket Cloud teams
+          team:
         ## Authentication (Main Team) (GitHub)
         github:
           ## List of whitelisted GitHub users
@@ -354,6 +372,9 @@ concourse:
         # host:
         ## CA certificate of GitHub Enterprise deployment
         # useCaCert:
+      ## Authentication (BitbucketCloud)
+      bitbucketCloud:
+        enabled: false
       ## Authentication (GitLab)
       gitlab:
         enabled: false
@@ -462,6 +483,8 @@ concourse:
       ## interval on which to heartbeat workers to the ATC
       # heartbeatInterval: 30s
   worker:
+    ## Duration after which the registration should be swapped to another random SSH gateway.
+    # rebalanceInterval:
     ## The name to set for the worker during registration. If not specified, the hostname will be used.
     # name:
     ## A tag to set during registration. Can be specified multiple times.
@@ -475,7 +498,13 @@ concourse:
     ## Blacklist of addresses to skip the proxy when reaching.
     # no_proxy:
     ## If set, the worker will be immediately removed upon stalling.
-    # ephemeral:
+    ephemeral: true
+    ## IP address on which to listen for health checking requests.
+    healthcheckIp: 0.0.0.0
+    ## Port on which to listen for health checking requests.
+    healthcheckPort: 8888
+    ## HTTP timeout for the full duration of health checking.
+    # healthcheckTimeout: 5s
     ## Port on which to listen for beacon pprof server.
     # bindDebugPort: 9099
     ## Version of the worker. This is normally baked in to the binary, so this flag is hidden.
@@ -497,133 +526,16 @@ concourse:
       # publicKey:
       ## File containing the private key to use when authenticating to the TSA.
       # workerPrivateKey:
-    garden:
-      ## Minimum level of logs to see.
-      # logLevel: info
-      ## format of log timestamps
-      # timeFormat: unix-epoch
-      ## Bind with TCP on the given IP.
-      # bindIp:
-      ## Bind with TCP on the given port.
-      bindPort: 7777
-      ## Bind with Unix on the given socket path.
-      # bindSocket: /tmp/garden.sock
-      ## Bind the debug server on the given IP.
-      # debugBindIp:
-      ## Bind the debug server to the given port.
-      # debugBindPort: 17013
-      ## Skip the preparation part of the host that requires root privileges
-      # skipSetup:
-      ## Directory in which to store container data.
-      # depot: /var/run/gdn/depot
-      ## Path in which to store properties.
-      # propertiesPath:
-      ## Path in which to store temporary sockets
-      # consoleSocketsPath:
-      ## Clean up proccess dirs on first invocation of wait
-      # cleanupProcessDirsOnWait:
-      ## Disable creation of privileged containers
-      # disablePrivilegedContainers:
-      ## The lowest numerical subordinate user ID the user is allowed to map
-      # uidMapStart: 1
-      ## The number of numerical subordinate user IDs the user is allowed to map
-      # uidMapLength:
-      ## The lowest numerical subordinate group ID the user is allowed to map
-      # gidMapStart: 1
-      ## The number of numerical subordinate group IDs the user is allowed to map
-      # gidMapLength:
-      ## Default rootfs to use when not specified on container creation.
-      # defaultRootfs:
-      ## Default time after which idle containers should expire.
-      # defaultGraceTime:
-      ## Clean up all the existing containers on startup.
-      # destroyContainersOnStartup:
-      ## Apparmor profile to use for unprivileged container processes
-      # apparmor:
-      ## Directory in which to extract packaged assets
-      # assetsDir: /var/gdn/assets
-      ## Path to the 'dadoo' binary.
-      # dadooBin:
-      ## Path to the 'nstar' binary.
-      # nstarBin:
-      ## Path to the 'tar' binary.
-      # tarBin:
-      ## path to the iptables binary
-      # iptablesBin: /sbin/iptables
-      ## path to the iptables-restore binary
-      # iptablesRestoreBin: /sbin/iptables-restore
-      ## Path execute as pid 1 inside each container.
-      # initBin:
-      ## Path to the runtime plugin binary.
-      # runtimePlugin: runc
-      ## Extra argument to pass to the runtime plugin. Can be specified multiple times.
-      # runtimePluginExtraArg:
-      ## Directory on which to store imported rootfs graph data.
-      # graph:
-      ## Disk usage of the graph dir at which cleanup should trigger, or -1 to disable graph cleanup.
-      # graphCleanupThresholdInMegabytes: -1
-      ## Image that should never be garbage collected. Can be specified multiple times.
-      # persistentImage:
-      ## Path to image plugin binary.
-      # imagePlugin:
-      ## Extra argument to pass to the image plugin to create unprivileged images. Can be specified multiple times.
-      # imagePluginExtraArg:
-      ## Path to privileged image plugin binary.
-      # privilegedImagePlugin:
-      ## Extra argument to pass to the image plugin to create privileged images. Can be specified multiple times.
-      # privilegedImagePluginExtraArg:
-      ## Docker registry API endpoint.
-      # dockerRegistry: registry-1.docker.io
-      ## Docker registry to allow connecting to even if not secure. Can be specified multiple times.
-      # insecureDockerRegistry:
-      ## Network range to use for dynamically allocated container subnets.
-      # networkPool: 10.254.0.0/22
-      ## Allow network access to the host machine.
-      # allowHostAccess:
-      ## Network ranges to which traffic from containers will be denied. Can be specified multiple times.
-      # denyNetwork:
-      ## DNS server IP address to use instead of automatically determined servers. Can be specified multiple times.
-      # dnsServer:
-      ## DNS server IP address to append to the automatically determined servers. Can be specified multiple times.
-      # additionalDnsServer:
-      ## Per line hosts entries. Can be specified multiple times and will be appended verbatim in order to /etc/hosts
-      # additionalHostEntry:
-      ## IP address to use to reach container's mapped ports. Autodetected if not specified.
-      # externalIp:
-      ## Start of the ephemeral port range used for mapped container ports.
-      # portPoolStart: 61001
-      ## Size of the port pool used for mapped container ports.
-      # portPoolSize: 4534
-      ## Path in which to store port pool properties.
-      # portPoolPropertiesPath:
-      ## MTU size for container network interfaces. Defaults to the MTU of the interface used for outbound access by the host. Max allowed value is 1500.
-      # mtu:
-      ## Path to network plugin binary.
-      # networkPlugin:
-      ## Extra argument to pass to the network plugin. Can be specified multiple times.
-      # networkPluginExtraArg:
-      ## Maximum number of microseconds each cpu share assigned to a container allows per quota period
-      # cpuQuotaPerShare: 0
-      ## Set hard limit for the tcp buf memory, value in bytes
-      # tcpMemoryLimit: 0
-      ## Default block IO weight assigned to a container
-      # defaultContainerBlockioWeight: 0
-      ## Maximum number of containers that can be created.
-      # maxContainers: 0
-      ## Disable swap memory limit
-      # disableSwapLimit:
-      ## Interval on which to emit metrics.
-      # metricsEmissionInterval: 1m
-      ## Origin identifier for Dropsonde-emitted metrics.
-      # dropsondeOrigin: garden-linux
-      ## Destination for Dropsonde-emitted metrics.
-      # dropsondeDestination: 127.0.0.1:3457
-      ## Path to a containerd socket.
-      # containerdSocket:
-      ## Use containerd to run processes in containers.
-      # useContainerdForProcesses:
-      ## Enable proxy DNS server.
+    garden: {}
+      ## Path to the 'gdn' executable (or leave as 'gdn' to find it in $PATH)
+      # bin: gdn
+      ## Path to a config file to use for Garden in INI format.
+      ## For information about the possible values:
+      ## https://bosh.io/jobs/garden?source=github.com/cloudfoundry/garden-runc-release
+      # config:
+      ## Enable a proxy DNS server for Garden
       # dnsProxyEnable:
+
     baggageclaim:
       ## Minimum level of logs to see.
       # logLevel: info
@@ -874,7 +786,7 @@ worker:
   #       type: BlockDevice
   #
   # As a special exception, this allows taking over the `concourse-work-dir`
-  # volume (from the default emptyDir) if `persistence.enabled` is false:
+  # volume (from the default emptyDir):
   #
   # additionalVolumes:
   #   - name: concourse-work-dir
@@ -901,56 +813,6 @@ worker:
   ## lifecycle semantics.
   terminationGracePeriodSeconds: 60
 
-  ## If any of the strings are found in logs, the worker's livenessProbe will fail and trigger a pod restart.
-  ## Specify one string per line, exact matching is used.
-  ##
-  fatalErrors: |-
-    guardian.api.garden-server.create.failed
-    baggageclaim.api.volume-server.create-volume-async.failed-to-create
-
-  ## Strategy for StatefulSet updates (requires Kubernetes 1.6+)
-  ## Ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset
-  ##
-  updateStrategy: RollingUpdate
-
-  ## Pod Management strategy (requires Kubernetes 1.7+)
-  ## Ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#pod-management-policies
-  ##
-  ## "OrderedReady" is default. "Parallel" means worker pods will launch or terminate
-  ## in parallel.
-  podManagementPolicy: Parallel
-
-  ## When persistance is disabled this value will be used to limit the emptyDir volume size
-  ## Ref: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-  # emptyDirSize: 20Gi
-
-## Persistent Volume Storage configuration.
-## ref: https://kubernetes.io/docs/user-guide/persistent-volumes
-##
-persistence:
-  ## Enable persistence using Persistent Volume Claims.
-  ##
-  enabled: true
-
-  ## Worker Persistence configuration.
-  ##
-  worker:
-    ## concourse data Persistent Volume Storage Class
-    ## If defined, storageClassName: <storageClass>
-    ## If set to "-", storageClassName: "", which disables dynamic provisioning
-    ## If undefined (the default) or set to null, no storageClassName spec is
-    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-    ##   GKE, AWS & OpenStack)
-    ##
-    # storageClass: "-"
-
-    ## Persistent Volume Access Mode.
-    ##
-    accessMode: ReadWriteOnce
-
-    ## Persistent Volume Storage Size.
-    ##
-    size: 20Gi
 
 ## Configuration values for the postgresql dependency.
 ## ref: https://github.com/kubernetes/charts/blob/master/stable/postgresql/README.md
@@ -1157,6 +1019,10 @@ secrets:
   # cfClientId:
   # cfClientSecret:
   # cfCaCert: |-
+
+  ## Secrets for BitbucketCloud OAuth.
+  # bitbucketCloudClientId:
+  # bitbucketCloudClientSecret:
 
   ## Secrets for GitHub OAuth.
   ##

@@ -1,0 +1,255 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "concourse.worker.fullname" . }}
+  labels:
+    app: {{ template "concourse.worker.fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "concourse.worker.fullname" . }}
+        release: "{{ .Release.Name }}"
+      annotations:
+{{ toYaml .Values.worker.annotations | indent 8 }}
+    spec:
+    {{- with .Values.worker.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      serviceAccountName: {{ if .Values.rbac.create }}{{ template "concourse.worker.fullname" . }}{{ else }}{{ .Values.rbac.workerServiceAccountName }}{{ end }}
+      tolerations:
+{{ toYaml .Values.worker.tolerations | indent 8 }}
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      containers:
+        - name: {{ template "concourse.worker.fullname" . }}
+          {{- if .Values.imageDigest }}
+          image: "{{ .Values.image }}@{{ .Values.imageDigest }}"
+          {{- else }}
+          image: "{{ .Values.image }}:{{ .Values.imageTag }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.imagePullPolicy | quote }}
+          args:
+            - worker
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.concourse.worker.healthcheckPort }}
+            timeoutSeconds: 5
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "kill", "-s", "SIGUSR2", "1" ]
+          env:
+            {{- if .Values.concourse.worker.rebalanceInterval }}
+            - name: CONCOURSE_REBALANCE_INTERVAL
+              value: {{ .Values.concourse.worker.rebalanceInterval | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.sweepInterval }}
+            - name: CONCOURSE_SWEEP_INTERVAL
+              value: {{ .Values.concourse.worker.sweepInterval | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.resourceTypes }}
+            - name: CONCOURSE_RESOURCE_TYPES
+              value: {{ .Values.concourse.worker.resourceTypes | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.drainTimeout }}
+            - name: CONCOURSE_DRAIN_TIMEOUT
+              value: {{ .Values.concourse.worker.drainTimeout | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.healthcheckIp }}
+            - name: CONCOURSE_HEALTHCHECK_IP
+              value: {{ .Values.concourse.worker.healthcheckIp | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.healthcheckPort }}
+            - name: CONCOURSE_HEALTHCHECK_PORT
+              value: {{ .Values.concourse.worker.healthcheckPort | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.healthcheckTimeout }}
+            - name: CONCOURSE_HEALTHCHECK_TIMEOUT
+              value: {{ .Values.concourse.worker.healthcheckTimeout | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.name }}
+            - name: CONCOURSE_NAME
+              value: {{ .Values.concourse.worker.name | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.tag }}
+            - name: CONCOURSE_TAG
+              value: {{ .Values.concourse.worker.tag | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.team }}
+            - name: CONCOURSE_TEAM
+              value: {{ .Values.concourse.worker.team | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.http_proxy }}
+            - name: http_proxy
+              value: {{ .Values.concourse.worker.http_proxy | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.https_proxy }}
+            - name: https_proxy
+              value: {{ .Values.concourse.worker.https_proxy | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.no_proxy }}
+            - name: no_proxy
+              value: {{ .Values.concourse.worker.no_proxy | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.ephemeral }}
+            - name: CONCOURSE_EPHEMERAL
+              value: {{ .Values.concourse.worker.ephemeral | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.bindDebugPort }}
+            - name: CONCOURSE_BIND_DEBUG_PORT
+              value: {{ .Values.concourse.worker.bindDebugPort | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.certsDir }}
+            - name: CONCOURSE_CERTS_DIR
+              value: {{ .Values.concourse.worker.certsDir | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.workDir }}
+            - name: CONCOURSE_WORK_DIR
+              value: {{ .Values.concourse.worker.workDir | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.bindIp }}
+            - name: CONCOURSE_BIND_IP
+              value: {{ .Values.concourse.worker.bindIp | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.bindPort }}
+            - name: CONCOURSE_BIND_PORT
+              value: {{ .Values.concourse.worker.bindPort | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.logLevel }}
+            - name: CONCOURSE_LOG_LEVEL
+              value: {{ .Values.concourse.worker.logLevel | quote }}
+            {{- end }}
+            - name: CONCOURSE_TSA_HOST
+              value: "{{ template "concourse.web.fullname" . }}:{{ .Values.concourse.web.tsa.bindPort}}"
+            - name: CONCOURSE_TSA_PUBLIC_KEY
+              value: "/concourse-keys/host_key.pub"
+            - name: CONCOURSE_TSA_WORKER_PRIVATE_KEY
+              value: "/concourse-keys/worker_key"
+            {{- if .Values.concourse.worker.garden.bin }}
+            - name: CONCOURSE_GARDEN_BIN
+              value: {{ .Values.concourse.worker.garden.bin | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.garden.config }}
+            - name: CONCOURSE_GARDEN_CONFIG
+              value: {{ .Values.concourse.worker.garden.config | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.garden.dnsProxyEnable }}
+            - name: CONCOURSE_GARDEN_DNS_PROXY_ENABLE
+              value: {{ .Values.concourse.worker.garden.dnsProxyEnable | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.logLevel }}
+            - name: CONCOURSE_BAGGAGECLAIM_LOG_LEVEL
+              value: {{ .Values.concourse.worker.baggageclaim.logLevel | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.bindIp }}
+            - name: CONCOURSE_BAGGAGECLAIM_BIND_IP
+              value: {{ .Values.concourse.worker.baggageclaim.bindIp | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.bindPort }}
+            - name: CONCOURSE_BAGGAGECLAIM_BIND_PORT
+              value: {{ .Values.concourse.worker.baggageclaim.bindPort | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.bindDebugPort }}
+            - name: CONCOURSE_BAGGAGECLAIM_BIND_DEBUG_PORT
+              value: {{ .Values.concourse.worker.baggageclaim.bindDebugPort | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.volumes }}
+            - name: CONCOURSE_BAGGAGECLAIM_VOLUMES
+              value: {{ .Values.concourse.worker.baggageclaim.volumes | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.driver }}
+            - name: CONCOURSE_BAGGAGECLAIM_DRIVER
+              value: {{ .Values.concourse.worker.baggageclaim.driver | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.btrfsBin }}
+            - name: CONCOURSE_BAGGAGECLAIM_BTRFS_BIN
+              value: {{ .Values.concourse.worker.baggageclaim.btrfsBin | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.mkfsBin }}
+            - name: CONCOURSE_BAGGAGECLAIM_MKFS_BIN
+              value: {{ .Values.concourse.worker.baggageclaim.mkfsBin | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.overlaysDir }}
+            - name: CONCOURSE_BAGGAGECLAIM_OVERLAYS_DIR
+              value: {{ .Values.concourse.worker.baggageclaim.overlaysDir | quote }}
+            {{- end }}
+            {{- if .Values.concourse.worker.baggageclaim.reapInterval }}
+            - name: CONCOURSE_BAGGAGECLAIM_REAP_INTERVAL
+              value: {{ .Values.concourse.worker.baggageclaim.reapInterval | quote }}
+            {{- end }}
+
+{{- if .Values.worker.env }}
+{{ toYaml .Values.worker.env | indent 12 }}
+{{- end }}
+          resources:
+{{ toYaml .Values.worker.resources | indent 12 }}
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: concourse-keys
+              mountPath: /concourse-keys
+              readOnly: true
+            - name: concourse-work-dir
+              mountPath: {{ .Values.concourse.workingDirectory | default "/concourse-work-dir" | quote }}
+{{- if .Values.worker.additionalVolumeMounts }}
+{{ toYaml .Values.worker.additionalVolumeMounts | indent 12 }}
+{{- end }}
+      affinity:
+{{- if .Values.worker.additionalAffinities }}
+{{ toYaml .Values.worker.additionalAffinities | indent 8 }}
+{{- end }}
+        podAntiAffinity:
+          {{- if .Values.worker.hardAntiAffinity }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: {{ template "concourse.worker.fullname" . }}
+                release: {{ .Release.Name | quote }}
+            topologyKey: kubernetes.io/hostname
+          {{- else }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: {{ template "concourse.worker.fullname" . }}
+                  release: {{ .Release.Name | quote }}
+          {{- end }}
+      volumes:
+{{- if .Values.worker.additionalVolumes }}
+{{ toYaml .Values.worker.additionalVolumes | indent 8 }}
+{{- end }}
+        - name: concourse-keys
+          secret:
+            secretName: {{ template "concourse.concourse.fullname" . }}
+            defaultMode: 0400
+            items:
+              - key: host-key-pub
+                path: host_key.pub
+              - key: worker-key
+                path: worker_key
+              - key: worker-key-pub
+                path: worker_key.pub
+      {{ if include "concourse.are-there-additional-volumes.with-the-name.concourse-work-dir" . | not }}
+        - name: concourse-work-dir
+          emptyDir:
+            {{- if .Values.worker.emptyDirSize }}
+            sizeLimit: {{ .Values.worker.emptyDirSize | quote }}
+            {{- end }}
+      {{- end }}

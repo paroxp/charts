@@ -88,6 +88,28 @@ local getSteps = [{
       ],
     },
     {
+      name: 'bump-cirocosta-fork',
+      plan: [
+        {
+          aggregate: [
+            {
+              get: 'charts-upstream',
+              trigger: true,
+            },
+          ],
+        },
+        {
+          inputs: [
+            'charts-upstream',
+          ],
+          params: {
+            repository: './charts-upstream',
+          },
+          put: 'charts-cirocosta-fork',
+        },
+      ],
+    },
+    {
       name: 'update-hosted-helm-repository',
       plan: [
         {
@@ -234,6 +256,14 @@ local getSteps = [{
       source: {
         branch: 'master',
         uri: 'https://((github-token))@github.com/concourse/charts',
+      },
+      type: 'git',
+    },
+    {
+      name: 'charts-cirocosta-fork',
+      source: {
+        branch: 'master',
+        uri: 'https://((github-token))@github.com/cirocosta/charts',
       },
       type: 'git',
     },

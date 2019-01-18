@@ -4,7 +4,8 @@ pipeline: pipeline.json
 	  -c $^
 
 pipeline.json: ./refs.json ./pipeline.jsonnet
-	@jsonnet \
+	jsonnet \
 		--ext-code 'branches=$(shell cat ./refs.json)' \
 		./pipeline.jsonnet > $@
+.PHONY: pipeline.json
 

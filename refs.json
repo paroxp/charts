@@ -1,14 +1,10 @@
 [
   {
     "repository": "cirocosta",
-    "name": "concourse/ephemeral-workers"
+    "name": "concourse/5.x-release-2"
   },
   {
     "repository": "cirocosta",
     "name": "concourse-prometheus-scrape-pods"
-  },
-  {
-    "repository": "cirocosta",
-    "name": "concourse/5.x-release-2"
   }
 ]

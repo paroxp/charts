@@ -187,15 +187,11 @@
                      "trigger": true
                   },
                   {
-                     "get": "charts-branch-concourse-ephemeral-workers",
+                     "get": "charts-branch-concourse-5.x-release-2",
                      "trigger": true
                   },
                   {
                      "get": "charts-branch-concourse-prometheus-scrape-pods",
-                     "trigger": true
-                  },
-                  {
-                     "get": "charts-branch-concourse-5.x-release-2",
                      "trigger": true
                   }
                ]
@@ -242,9 +238,9 @@
    ],
    "resources": [
       {
-         "name": "charts-branch-concourse-ephemeral-workers",
+         "name": "charts-branch-concourse-5.x-release-2",
          "source": {
-            "branch": "concourse/ephemeral-workers",
+            "branch": "concourse/5.x-release-2",
             "uri": "https://github.com/cirocosta/charts"
          },
          "type": "git"
@@ -253,14 +249,6 @@
          "name": "charts-branch-concourse-prometheus-scrape-pods",
          "source": {
             "branch": "concourse-prometheus-scrape-pods",
-            "uri": "https://github.com/cirocosta/charts"
-         },
-         "type": "git"
-      },
-      {
-         "name": "charts-branch-concourse-5.x-release-2",
-         "source": {
-            "branch": "concourse/5.x-release-2",
             "uri": "https://github.com/cirocosta/charts"
          },
          "type": "git"

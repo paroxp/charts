@@ -52,7 +52,7 @@ _update_chart_version() {
 	local tmp_chart_file=$(mktemp /tmp/Chart.yaml.XXXXXX)
 
 	cat $chart_file |
-		sed 's/^version.*/version: 1337.0.0/g' >$tmp_chart_file
+		sed 's/^version.*/version: 1338.0.0/g' >$tmp_chart_file
 	mv $tmp_chart_file $chart_file
 }
 
